@@ -60,6 +60,7 @@ import {
   OfcToken,
   Zec,
   EosToken,
+  AvaxCToken,
 } from './coins';
 import { tokens } from '../config';
 
@@ -68,8 +69,21 @@ import { Bcha } from './coins/bcha';
 import { Tbcha } from './coins/tbcha';
 import { Dot } from './coins/dot';
 import { Tdot } from './coins/tdot';
+import { Environments } from './environments';
 
 export type CoinConstructor = (bitgo: BitGo, staticsCoin?: Readonly<StaticsBaseCoin>) => BaseCoin;
+
+/**
+ * It creates a constructor that checks network env to choose.
+ * Avalanche network has the same contract address for Mainnet and Testnet.
+ * The issue is select the right one see with network is used.
+ */
+const envDependantCoinConstructor =
+  (coinConstructorMainNet: CoinConstructor, coinConstructorTestNet: CoinConstructor) =>
+  (bitgo: BitGo, staticsCoin?: Readonly<StaticsBaseCoin>) =>
+    Environments[bitgo.getEnv()].network !== 'testnet'
+      ? coinConstructorMainNet(bitgo, staticsCoin)
+      : coinConstructorTestNet(bitgo, staticsCoin);
 
 export class CoinFactory {
   private coinConstructors = new Map<string, CoinConstructor>();
@@ -115,11 +129,15 @@ export class CoinFactory {
     throw new errors.UnsupportedCoinError(name);
   }
 
-  public registerCoinConstructor(name: string, constructor: CoinConstructor) {
+  public registerCoinConstructor(name: string, constructor: CoinConstructor, isTestnetEnvDependant = false): void {
     if (this.coinConstructors.has(name)) {
-      throw new Error(`coin '${name}' is already defined`);
+      if (!isTestnetEnvDependant) {
+        throw new Error(`coin '${name}' is already defined`);
+      }
+      this.coinConstructors.set(name, envDependantCoinConstructor(this.coinConstructors.get(name)!, constructor));
+    } else {
+      this.coinConstructors.set(name, constructor);
     }
-    this.coinConstructors.set(name, constructor);
   }
 }
 
@@ -209,4 +227,17 @@ for (const token of [...tokens.bitcoin.eos.tokens, ...tokens.testnet.eos.tokens]
 for (const token of [...tokens.bitcoin.algo.tokens, ...tokens.testnet.algo.tokens]) {
   const tokenConstructor = AlgoToken.createTokenConstructor(token);
   GlobalCoinFactory.registerCoinConstructor(token.type, tokenConstructor);
+}
+
+for (const token of [...tokens.bitcoin.avaxc.tokens]) {
+  const tokenConstructor = AvaxCToken.createTokenConstructor(token);
+  GlobalCoinFactory.registerCoinConstructor(token.type, tokenConstructor);
+  GlobalCoinFactory.registerCoinConstructor(token.tokenContractAddress, tokenConstructor);
+}
+
+for (const token of [...tokens.testnet.avaxc.tokens]) {
+  const tokenConstructor = AvaxCToken.createTokenConstructor(token);
+  GlobalCoinFactory.registerCoinConstructor(token.type, tokenConstructor);
+  // this tokenContractAddress could be added as mainnet token.
+  GlobalCoinFactory.registerCoinConstructor(token.tokenContractAddress, tokenConstructor, true);
 }
