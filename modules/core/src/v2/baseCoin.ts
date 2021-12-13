@@ -113,6 +113,8 @@ export interface SupplementGenerateWalletOptions {
   };
   rootPrivateKey?: string;
   disableKRSEmail?: boolean;
+  address?: string;
+  suppressBroadcast?: boolean;
 }
 
 export interface FeeEstimateOptions {
@@ -376,12 +378,20 @@ export abstract class BaseCoin {
   }
 
   /**
+   * Check whether a coin supports single sig wallets or not
+   * @returns {boolean}
+   */
+  supportsUserSingleSigWallet() {
+    return false;
+  }
+
+  /**
    * Hook to add additional parameters to the wallet generation
    * @param walletParams
    * @param keychains
    * @return {*}
    */
-  supplementGenerateWallet(walletParams: SupplementGenerateWalletOptions, keychains: KeychainsTriplet): Promise<any> {
+  supplementGenerateWallet(walletParams: SupplementGenerateWalletOptions): Promise<any> {
     return Promise.resolve(walletParams);
   }
 
