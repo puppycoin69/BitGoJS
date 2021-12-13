@@ -313,20 +313,20 @@ describe('Casper', function () {
 
     it('should explain a signed transfer transaction', async () => {
       const builtTxInfo = {
-        txHex: '{"deploy":{"hash":"1f5683fa490f717318363995e4fc1956fbcba219ac356a261a5caa5886ce66c2","header":{"account":"0202865365d0c37d4bcdb47fd06a1d1a5f933725e2820def5cb24d33b1004326fcec","timestamp":"2021-03-19T18:03:09.082Z","ttl":"86400000ms","gas_price":1,"body_hash":"c7d70b14f4c56e1698a4540bcbc93ae8d5039bf26b69bccb74c86ed302fc66be","dependencies":[],"chain_name":"delta-10"},"payment":{"ModuleBytes":{"module_bytes":"","args":[["amount",{"cl_type":"U512","bytes":"02f82a","parsed":"null"}]]}},"session":{"Transfer":{"args":[["amount",{"cl_type":"U512","bytes":"0400f90295","parsed":"2500000000"}],["target",{"cl_type":{"ByteArray":32},"bytes":"7ed4abba796fb70a335970ed1be187a7e8bbc107523df4b1f274a9591189b273","parsed":"null"}],["id",{"cl_type":{"Option":"U64"},"bytes":"01d204000000000000","parsed":"1234"}],["deploy_type",{"cl_type":"String","bytes":"0400000053656e64","parsed":"Send"}],["to_address",{"cl_type":"String","bytes":"440000003032303341443039464441413333384345414232364639374546363038444244303133324646374242353730303835393936423631463730313438343037303146374633","parsed":"0203AD09FDAA338CEAB26F97EF608DBD0132FF7BB570085996B61F7014840701F7F3"}]]}},"approvals":[]}}',
+        txHex: '{"deploy":{"hash":"674b0e86de2462449a1e28fa6bf53dd9f760e78bda9512a559d01c4390b1898f","header":{"account":"0203ef49a6dcccdb55d47c3e3204d6e40888385d2d0145a0db7d859bf222a3b0150e","timestamp":"2021-12-14T00:53:32.836Z","ttl":"1day","gas_price":10,"body_hash":"6782012b0c8b3e3d5b17c584870ba9f4d8230984a75193b2efb14bd8b49771d6","dependencies":[],"chain_name":"integration-test"},"payment":{"ModuleBytes":{"module_bytes":"","args":[["amount",{"bytes":"021027","cl_type":"U512"}]]}},"session":{"Transfer":{"args":[["amount",{"bytes":"0400f90295","cl_type":"U512","parsed":"2500000000"}],["target",{"bytes":"328d774b6b2f042de2be9f9027ef39984811bdcaaa3808c002b4a55aa3a9c0e2","cl_type":{"ByteArray":32}}],["id",{"bytes":"017b00000000000000","cl_type":{"Option":"U64"},"parsed":"123"}],["deploy_type",{"bytes":"0400000053656e64","cl_type":"String","parsed":"Send"}],["to_address",{"bytes":"440000003032303362616237373038626265653261386136636364326434663932666538613930653037333062663137346538383430346165333331326336383430336130333833","cl_type":"String","parsed":"0203bab7708bbee2a8a6ccd2d4f92fe8a90e0730bf174e88404ae3312c68403a0383"}]]}},"approvals":[{"signer":"0203ef49a6dcccdb55d47c3e3204d6e40888385d2d0145a0db7d859bf222a3b0150e","signature":"02aa845e7888bfe0687bedead49107683d6329eb2b825e5bd551353d56ccf21ac565b908869fccbb722d03d6db378525f7a4ffe842c50fdd15a7ef6ec7e925ee6b"}]}}',
         txInfo: {
-          hash: '1f5683fa490f717318363995e4fc1956fbcba219ac356a261a5caa5886ce66c2',
+          hash: '674b0e86de2462449a1e28fa6bf53dd9f760e78bda9512a559d01c4390b1898f',
           fee: {
             gasLimit: '11000',
             gasPrice: '1',
           },
-          from: '0202865365d0c37d4bcdb47fd06a1d1a5f933725e2820def5cb24d33b1004326fcec',
-          startTime: '2021-03-19T18:03:09.082Z',
+          from: '0203ef49a6dcccdb55d47c3e3204d6e40888385d2d0145a0db7d859bf222a3b0150e',
+          startTime: '2021-12-14T00:53:32.836Z',
           expiration: 86400000,
           deployType: 'Send',
-          to: '0203AD09FDAA338CEAB26F97EF608DBD0132FF7BB570085996B61F7014840701F7F3',
+          to: '0203bab7708bbee2a8a6ccd2d4f92fe8a90e0730bf174e88404ae3312c68403a0383',
           amount: '2500000000',
-          transferId: 1234,
+          transferId: 123,
         },
         feeInfo: {
           gasLimit: '11000',
@@ -334,7 +334,7 @@ describe('Casper', function () {
         },
         recipients: [
           {
-            address: '0203AD09FDAA338CEAB26F97EF608DBD0132FF7BB570085996B61F7014840701F7F3',
+            address: '0203bab7708bbee2a8a6ccd2d4f92fe8a90e0730bf174e88404ae3312c68403a0383',
             amount: '2500000000',
           },
         ],
@@ -352,6 +352,7 @@ describe('Casper', function () {
         'changeAmount',
       ]);
       explainedTx.fee.should.equal(builtTxInfo.feeInfo);
+      explainedTx.id.should.equal(builtTxInfo.txInfo.hash);
       explainedTx.outputs.length.should.equal(1);
       explainedTx.outputs[0].amount.should.equal(builtTxInfo.txInfo.amount);
       explainedTx.outputs[0].address.should.equal(builtTxInfo.txInfo.to);
