@@ -29,6 +29,10 @@ export enum TransactionType {
   StakingWithdraw,
   // Handle smart contract calls
   ContractCall,
+  // Wallet owner opt-in to receive this token in his wallet
+  EnableToken,
+  // Wallet owner opt-out to receive this token in his wallet
+  DisableToken,
 }
 
 /**

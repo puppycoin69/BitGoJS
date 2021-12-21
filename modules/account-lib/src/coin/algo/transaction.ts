@@ -2,7 +2,7 @@ import { BaseCoin as CoinConfig } from '@bitgo/statics';
 import algosdk from 'algosdk';
 import { BaseTransaction, TransactionType } from '../baseCoin';
 import { BaseKey } from '../baseCoin/iface';
-import { InvalidTransactionError, InvalidKey, SigningError } from '../baseCoin/errors';
+import { InvalidKey, InvalidTransactionError, SigningError } from '../baseCoin/errors';
 import utils from './utils';
 import { KeyPair } from './keyPair';
 import { TxData } from './ifaces';
@@ -26,17 +26,13 @@ export class Transaction extends BaseTransaction {
     if (this._numberOfRequiredSigners === 0) {
       return false;
     }
-    if (this._numberOfRequiredSigners === 1) {
-      const kp = new KeyPair({ prv: key });
-      const addr = kp.getAddress();
-      if (addr === this._sender) {
-        return true;
-      } else {
-        return false;
-      }
-    } else {
+    if (this._numberOfRequiredSigners !== 1) {
       return true;
     }
+
+    const kp = new KeyPair({ prv: key });
+    const addr = kp.getAddress();
+    return addr === this._sender;
   }
 
   sender(address: string): void {
@@ -210,14 +206,22 @@ export class Transaction extends BaseTransaction {
       tokenId: this._algoTransaction?.assetIndex,
       genesisID: this._algoTransaction.genesisID,
       genesisHash: this._algoTransaction.genesisHash.toString('base64'),
+      txType: TransactionType[this.type],
+      amount: '0',
     };
+
     if (this._algoTransaction.closeRemainderTo) {
       result.closeRemainderTo = algosdk.encodeAddress(this._algoTransaction.closeRemainderTo.publicKey);
     }
-    if (this.type === TransactionType.Send) {
+
+    if (this._algoTransaction.to) {
       result.to = algosdk.encodeAddress(this._algoTransaction.to.publicKey);
+    }
+
+    if (this._algoTransaction.amount) {
       result.amount = this._algoTransaction.amount.toString();
     }
+
     if (this.type === TransactionType.WalletInitialization) {
       if (!this._algoTransaction.nonParticipation) {
         result.voteKey = this._algoTransaction.voteKey.toString('base64');
@@ -230,7 +234,6 @@ export class Transaction extends BaseTransaction {
       }
     }
     if (result.type === 'axfer' && result.to && result.amount) {
-      result.txType = utils.getTokenTxType(result.amount, result.from, result.to, result.closeRemainderTo);
       result.tokenName = this._coinConfig.suffix;
     }
     return result;
