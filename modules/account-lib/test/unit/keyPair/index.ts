@@ -1,13 +1,13 @@
 /**
  * @prettier
  */
-import 'should';
+import should from 'should';
 import { register } from '../../../src/keyPair';
 import * as coinModules from '../../../src';
 import { coins } from '@bitgo/statics';
 import { KeyPair as EthKeyPair } from '../../../src/coin/eth';
 import { KeyPair as Eth2KeyPair } from '../../../src/coin/eth2';
-import { KeyPair as DotKeyPair } from '../../../src/coin/dot';
+import { KeyPair as ed25519KeyPair } from '../../../src/coin/dot';
 
 describe('Key Pair Factory', () => {
   describe('coinToKey map initialization', function () {
@@ -23,6 +23,10 @@ describe('Key Pair Factory', () => {
         (typeof keyPair.recordKeysFromPrivateKey).should.equal('function');
         (typeof keyPair.recordKeysFromPublicKey).should.equal('function');
       });
+    });
+
+    it('should fail to instantiate an unsupported coin', () => {
+      should.throws(() => register('fakeUnsupported'));
     });
   });
 
@@ -59,25 +63,68 @@ describe('Key Pair Factory', () => {
   });
 
   describe('ed25519 generation', function () {
-    it('should initialize dot keyPair map', () => {
-      const dot = coins.get('dot');
-      const keyPair = register(dot.name) as DotKeyPair;
-      (typeof keyPair.getKeys).should.equal('function');
-      (typeof keyPair.getAddress).should.equal('function');
-      (typeof keyPair.verifySignature).should.equal('function');
-      (typeof keyPair.signMessage).should.equal('function');
-    });
+    const fixedKeyPair = {
+      prv: 'e349d47cd4af4644afbc05b8463c0d0d19a0cc742be5c1646af2e7be8aafbd50',
+    };
+    const givenSignature = new Uint8Array(
+      Buffer.from(
+        'b2e775827f6b3c9050524a7d2f5344db73eb92044d8e42c38357a30686a9ce3a19b8fbf8c9d1edb0f3c5232441d34b63af92805aed77097ee50076f696eaff0f',
+        'hex',
+      ),
+    );
+    ['dot', 'tdot', 'algo', 'talgo', 'hbar', 'thbar', 'sol', 'tsol'].forEach((coinName) => {
+      describe(`${coinName} keyPair`, function () {
+        it(`should initialize ${coinName} keyPair map`, () => {
+          const keyPair = register(coinName) as ed25519KeyPair;
+          (typeof keyPair.getKeys).should.equal('function');
+          (typeof keyPair.getAddress).should.equal('function');
+          (typeof keyPair.verifySignature).should.equal('function');
+          (typeof keyPair.signMessage).should.equal('function');
+        });
 
-    it('should initialize dot keyPair map with arguments', () => {
-      const dot = coins.get('dot');
-      const dotPubKey = {
-        pub: 'd472bd6e0f1f92297631938e30edb682208c2cd2698d80cf678c53a69979eb9f',
-      };
-      const keyPair = register(dot.name, dotPubKey) as DotKeyPair;
-      (typeof keyPair.getKeys).should.equal('function');
-      (typeof keyPair.getAddress).should.equal('function');
-      (typeof keyPair.verifySignature).should.equal('function');
-      (typeof keyPair.signMessage).should.equal('function');
+        it(`should initialize ${coinName} keyPair map with arguments`, () => {
+          const keyPair = register(coinName, fixedKeyPair) as ed25519KeyPair;
+          (typeof keyPair.getKeys).should.equal('function');
+          (typeof keyPair.getAddress).should.equal('function');
+          (typeof keyPair.verifySignature).should.equal('function');
+          (typeof keyPair.signMessage).should.equal('function');
+        });
+
+        it('should get same signature form same message', () => {
+          // Given
+          const kp = register(coinName, fixedKeyPair) as ed25519KeyPair;
+          // When
+          const signature = kp.signMessage('message');
+          // Then
+          should.deepEqual(signature, givenSignature);
+        });
+
+        it('should get different signature form different message', () => {
+          const kp = register(coinName, fixedKeyPair) as ed25519KeyPair;
+          // When
+          const signature = kp.signMessage('wrong message');
+          // Then
+          should.notEqual(signature, givenSignature);
+        });
+
+        it('should be verified correctly', () => {
+          // Given
+          const kp = register(coinName, fixedKeyPair) as ed25519KeyPair;
+          // When
+          const verifyResult = kp.verifySignature('message', givenSignature);
+          // Then
+          verifyResult.should.be.True();
+        });
+
+        it('should not be verified wrong message', () => {
+          // Given
+          const kp = register(coinName, fixedKeyPair) as ed25519KeyPair;
+          // When
+          const verifyResult = kp.verifySignature('wrong message', givenSignature);
+          // Then
+          verifyResult.should.be.False();
+        });
+      });
     });
   });
 });
